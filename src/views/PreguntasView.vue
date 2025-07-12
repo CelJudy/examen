@@ -5,16 +5,14 @@ import VueHtml2pdf from 'vue-html2pdf';
 
 //nombre no dejar vacio
 //revisar segunda pregunta
-//evento visibility
 //poder saltar las preguntas
 
 const currentAnswer=ref(0);
-const buttonValue=ref("Iniciar");
 const answer=ref("");
 let id=0;
 let inicio=0;
 let fin=0;
-const visible=ref(true);
+const iniciarVisible=ref(true);
 const inputType=ref("text");
 
 const preguntas=[
@@ -39,7 +37,10 @@ const preguntas=[
 
 const respuestas=[0, 42, 62, 6, 1275, 157, 56, 2, 4, 10, 3, 38, 45, 28, 12, 0];
 
-const iniciar=async ()=>{
+let tiempo=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+const respondido=ref([false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]);
+
+/* const iniciar=async ()=>{
     if(currentAnswer.value==preguntas.length-3){
         buttonValue.value="Terminar";
     }
@@ -54,39 +55,75 @@ const iniciar=async ()=>{
         fin=0;
         answer.value="";
         if(currentAnswer.value==preguntas.length-2){
-            visible.value=false;
+            iniciarVisible.value=false;
             //pdf
         }
         currentAnswer.value++;
         inicio=Date.now();
         return
     }
-    if(currentAnswer.value==0){
-        const res=await saveName(answer.value);
-        if(res.status==200){
-            id=res.data.id;
-            currentAnswer.value++;
-            inputType.value="number";
-            buttonValue.value="Siguiente";
-            inicio=Date.now();
-        }
+} */
+
+const iniciar=async ()=>{
+    const res=await saveName(answer.value);
+    if(res.status==200){
+        id=res.data.id;
+        currentAnswer.value++;
+        inputType.value="number";
         answer.value="";
-        return
+        iniciarVisible.value=false;
+        inicio=Date.now();
     }
 }
 
+const siguiente=()=>{
+    if(currentAnswer.value<preguntas.length-2){
+        fin=Date.now();
+        tiempo[currentAnswer.value]+=(fin-inicio)/1000;
+        currentAnswer.value++;
+        answer.value="";
+        inicio=Date.now();
+    }
+}
+const cambiar=(num)=>{
+    if(currentAnswer.value<preguntas.length-2){
+        fin=Date.now();
+        tiempo[currentAnswer.value]+=(fin-inicio)/1000;
+        currentAnswer.value=num;
+        answer.value="";
+        inicio=Date.now();
+    }
+}
+const anterior=()=>{
+    if(currentAnswer.value>1){
+        fin=Date.now();
+        tiempo[currentAnswer.value]+=(fin-inicio)/1000;
+        currentAnswer.value--;
+        answer.value="";
+        inicio=Date.now();
+    }
+}
+const guardar=async ()=>{
+    fin=Date.now();
+    const data={
+        pregunta:currentAnswer.value,
+        respuesta:answer.value,
+        tiempo:(fin-inicio)/1000
+    }
+    const res=await saveAnswer(id, data);
+    respondido.value[currentAnswer.value]=true;
+}
+
 const lostWindowFocus=()=> {
-    console.log('La pestaña perdió el foco');
     currentAnswer.value=0;
-    buttonValue.value="Iniciar";
     answer.value="";
     id=0;
     inicio=0;
     fin=0;
-    visible.value=true;
+    iniciarVisible.value=true;
 }
 
-onMounted(() => {
+/* onMounted(() => {
     document.addEventListener('visibilitychange', lostWindowFocus);
     document.addEventListener('blur', lostWindowFocus);
 });
@@ -94,7 +131,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     document.removeEventListener('visibilitychange');
     document.removeEventListener('blur');
-});
+}); */
 
     
 
@@ -102,11 +139,11 @@ onBeforeUnmount(() => {
 <template>
     <div class="flex min-h-screen w-full items-start bg-gray-900 transition duration-300 ease-in-out relative">
         <div class="flex-auto p-4">
-            <div class="flex justify-center min-h-screen">
+            <div class="flex justify-center min-h-screen space-x-2">
                 <div class="md:w-8/12 lg:w-4/12">
 
                     <p class="title-text mb-3">Examen diagnóstico</p><br>
-                    <p class="subtitle-text mb-3">{{ preguntas[currentAnswer] }}</p><br>
+                    <p class="subtitle-text mb-3">{{((currentAnswer>0)?`${currentAnswer} - `:'')}}{{ preguntas[currentAnswer] }}</p><br>
                     <input
                         v-if="currentAnswer<preguntas.length-1"
                         :type="inputType"
@@ -119,9 +156,47 @@ onBeforeUnmount(() => {
                     <button
                         class="mt-5 w-full flex items-center justify-center rounded-md focus:outline-none transition duration-300 ease-in-out bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
                         @click="iniciar"
-                        v-if="visible"
+                        v-if="iniciarVisible"
                     >
-                    {{buttonValue}}
+                    Iniciar
+                    </button>
+                    <div class="flex flex-wrap justify-evenly space-x-2" v-if="!iniciarVisible">
+                        <button
+                            class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
+                            @click="anterior"
+                        >
+                        Anterior
+                        </button>
+                        <button
+                            class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-900 px-4 py-2 text-white text-base"
+                            @click="guardar"
+                            :disabled="respondido[currentAnswer]"
+                        >
+                            Guardar
+                        </button>
+                        <button
+                            class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
+                            @click="siguiente"
+                        >
+                        Siguiente
+                        </button>
+                    </div>
+                    <button
+                        class="mt-5 w-full flex items-center justify-center rounded-md focus:outline-none transition duration-300 ease-in-out bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
+                        v-if="!iniciarVisible"
+                    >
+                    Terminar
+                    </button>
+                </div>
+                <div>
+                    <button v-if="!iniciarVisible" v-for="i in (preguntas.length-2)"
+                        :class="[
+                            'w-7 border rounded-md border-gray-600 text-white text-base space-y-2 flex flex-wrap justify-evenly',
+                            (respondido[i])?' bg-blue-500 ':''
+                        ]"
+                        @click="cambiar(i)"
+                    >
+                        {{ i }}
                     </button>
                 </div>
             </div>
