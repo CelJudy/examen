@@ -3,6 +3,11 @@ import {ref, onMounted, onBeforeUnmount } from 'vue';
 import { saveName, saveAnswer, selectAnswers } from '@/utils';
 import VueHtml2pdf from 'vue-html2pdf'; 
 
+//nombre no dejar vacio
+//revisar segunda pregunta
+//evento visibility
+//poder saltar las preguntas
+
 const currentAnswer=ref(0);
 const buttonValue=ref("Iniciar");
 const answer=ref("");
@@ -16,8 +21,8 @@ const preguntas=[
     'Escribe tu nombre completo',
     '¿Cual es el siguiente número en esta secuencia? 2, 6, 12, 20, 30, ?',
     '¿Cuál es el menor número entero positivo que al dividirse entre 3, 4 y 5 deja residuo 2?',
-    /* '¿En cuántas formas diferentes se pueden ordenar las letras de la palabra “PRO”?',
-    '¿Cuál es la suma de los 50 primeros números naturales?',//1275
+    '¿En cuántas formas diferentes se pueden ordenar las letras de la palabra “PRO”?',
+    '¿Cuál es la suma de los 50 primeros números naturales?',
     'Si un virus que se duplica cada segundo y pasados 50 segundos hay 1256, ¿Cuantos virus habia pasados 47 segundos?',
     'Si Juan tiene 8 años y su hermana tiene la mitad de la edad de Juan, ¿Que edad tendra la hermana de Juan cuando este tenga 60?',
     'En una carrera, rebasas al segundo lugar. ¿En qué lugar quedas?',
@@ -28,7 +33,7 @@ const preguntas=[
     'Un tren de 150 metros pasa por un poste en 15 segundos. ¿Cuántos segundos tarda en pasar completamente un puente de 450 metros?',
     'Una tienda aplica un 20% de descuento y luego un 10% adicional sobre el precio ya rebajado. ¿Cuál es el descuento total aplicado?',
     '¿Cuántos meses tienen 28 días?',
-    'Un reloj marca las 3:15. ¿Cuál es el ángulo entre la aguja de las horas y la de los minutos?', */
+    'Un reloj marca las 3:15. ¿Cuál es el ángulo entre la aguja de las horas y la de los minutos?',
     'Generando PDF...'
 ]
 
@@ -70,27 +75,25 @@ const iniciar=async ()=>{
     }
 }
 
-function handleVisibilityChange() {
-    if (document.visibilityState === 'hidden') {
-        //console.log('La pestaña perdió el foco');
-        currentAnswer.value=0;
-        buttonValue.value="Iniciar";
-        answer.value="";
-        id=0;
-        inicio=0;
-        fin=0;
-        visible.value=true;
-    } /* else if (document.visibilityState === 'visible') {
-        console.log('La pestaña volvió a tener foco');
-        } */
+const lostWindowFocus=()=> {
+    console.log('La pestaña perdió el foco');
+    currentAnswer.value=0;
+    buttonValue.value="Iniciar";
+    answer.value="";
+    id=0;
+    inicio=0;
+    fin=0;
+    visible.value=true;
 }
 
 onMounted(() => {
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', lostWindowFocus);
+    document.addEventListener('blur', lostWindowFocus);
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener('visibilitychange');
+    document.removeEventListener('blur');
 });
 
     
