@@ -65,14 +65,16 @@ const respondido=ref([false,false,false,false,false,false,false,false,false,fals
 } */
 
 const iniciar=async ()=>{
-    const res=await saveName(answer.value);
-    if(res.status==200){
-        id=res.data.id;
-        currentAnswer.value++;
-        inputType.value="number";
-        answer.value="";
-        iniciarVisible.value=false;
-        inicio=Date.now();
+    if(answer.value!=""){
+        const res=await saveName(answer.value);
+        if(res.status==200){
+            id=res.data.id;
+            currentAnswer.value++;
+            inputType.value="number";
+            answer.value="";
+            iniciarVisible.value=false;
+            inicio=Date.now();
+        }
     }
 }
 
