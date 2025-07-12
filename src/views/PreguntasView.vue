@@ -116,6 +116,12 @@ const guardar=async ()=>{
     respondido.value[currentAnswer.value]=true;
 }
 
+const handleKeyDown=(event)=>{
+    if((currentAnswer.value>0 && !((event.keyCode>=48 && event.keyCode<=57) || (event.keyCode>=96 && event.keyCode<=105)))){
+        return event.preventDefault();;
+    }
+}
+
 const lostWindowFocus=()=> {
     currentAnswer.value=0;
     answer.value="";
@@ -151,7 +157,6 @@ onBeforeUnmount(() => {
                         :type="inputType"
                         v-model="answer"
                         class="form-input w-full rounded-md px-4 py-2 border focus:outline-none focus:ring-2 bg-gray-800 text-white border-gray-600 text-lg"
-                        @blur="handleBlur"
                         @keydown="handleKeyDown"
                     />
 
