@@ -1,11 +1,7 @@
 <script setup>
 import {ref, onMounted, onBeforeUnmount } from 'vue';
 import { saveName, saveAnswer, selectAnswers } from '@/utils';
-import VueHtml2pdf from 'vue-html2pdf'; 
-
-//nombre no dejar vacio
-//revisar segunda pregunta
-//poder saltar las preguntas
+import { Icon } from '@iconify/vue';
 
 const currentAnswer=ref(0);
 const answer=ref("");
@@ -14,6 +10,7 @@ let inicio=0;
 let fin=0;
 const iniciarVisible=ref(true);
 const inputType=ref("text");
+const guardarTexto=ref("Guardar");
 
 const preguntas=[
     'Escribe tu nombre completo',
@@ -33,12 +30,15 @@ const preguntas=[
     '¿Cuántos meses tienen 28 días?',
     'Un reloj marca las 3:15. ¿Cuál es el ángulo entre la aguja de las horas y la de los minutos?',
     'Generando PDF...'
-]
+];
 
-const respuestas=[0, 42, 62, 6, 1275, 157, 56, 2, 4, 10, 3, 38, 45, 28, 12, 0];
+const respuestasCorrectas=[0, 42, 62, 6, 1275, 157, 56, 2, 4, 10, 3, 38, 45, 28, 12, 0];
+let respuestas=[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
 
 let tiempo=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
 const respondido=ref([false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]);
+
 
 /* const iniciar=async ()=>{
     if(currentAnswer.value==preguntas.length-3){
@@ -83,42 +83,57 @@ const siguiente=()=>{
         fin=Date.now();
         tiempo[currentAnswer.value]+=(fin-inicio)/1000;
         currentAnswer.value++;
-        answer.value="";
+        answer.value=respuestas[currentAnswer.value];
         inicio=Date.now();
     }
 }
+
 const cambiar=(num)=>{
     if(currentAnswer.value<preguntas.length-2){
         fin=Date.now();
         tiempo[currentAnswer.value]+=(fin-inicio)/1000;
         currentAnswer.value=num;
-        answer.value="";
+        answer.value=respuestas[currentAnswer.value];
         inicio=Date.now();
     }
 }
+
 const anterior=()=>{
     if(currentAnswer.value>1){
         fin=Date.now();
         tiempo[currentAnswer.value]+=(fin-inicio)/1000;
         currentAnswer.value--;
-        answer.value="";
+        answer.value=respuestas[currentAnswer.value];
         inicio=Date.now();
     }
 }
+
 const guardar=async ()=>{
-    fin=Date.now();
-    const data={
-        pregunta:currentAnswer.value,
-        respuesta:answer.value,
-        tiempo:(fin-inicio)/1000
+    if(answer.value!=""){
+        fin=Date.now();
+        guardarTexto.value="";
+        const data={
+            pregunta:currentAnswer.value,
+            respuesta:answer.value,
+            tiempo:(fin-inicio)/1000
+        }
+        const res=await saveAnswer(id, data);
+        guardarTexto.value="Guardar";
+        if(res.status==200){
+            respuestas[currentAnswer.value]=Number(answer.value);
+            respondido.value[currentAnswer.value]=true;
+        }
     }
-    const res=await saveAnswer(id, data);
-    respondido.value[currentAnswer.value]=true;
+}
+
+const terminar=async ()=>{
+    const res=await selectAnswers(id);
+    
 }
 
 const handleKeyDown=(event)=>{
-    if((currentAnswer.value>0 && !((event.keyCode>=48 && event.keyCode<=57) || (event.keyCode>=96 && event.keyCode<=105)))){
-        return event.preventDefault();;
+    if((currentAnswer.value>0 && !((event.keyCode>=48 && event.keyCode<=57) || (event.keyCode>=96 && event.keyCode<=105) || event.keyCode==8))){
+        return event.preventDefault();
     }
 }
 
@@ -131,7 +146,7 @@ const lostWindowFocus=()=> {
     iniciarVisible.value=true;
 }
 
-/* onMounted(() => {
+onMounted(() => {
     document.addEventListener('visibilitychange', lostWindowFocus);
     document.addEventListener('blur', lostWindowFocus);
 });
@@ -139,7 +154,7 @@ const lostWindowFocus=()=> {
 onBeforeUnmount(() => {
     document.removeEventListener('visibilitychange');
     document.removeEventListener('blur');
-}); */
+});
 
     
 
@@ -177,10 +192,12 @@ onBeforeUnmount(() => {
                         <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-900 px-4 py-2 text-white text-base"
                             @click="guardar"
-                            :disabled="respondido[currentAnswer]"
+                            :disabled="respondido[currentAnswer] || guardarTexto==''"
                         >
-                            Guardar
-                        </button>
+                            {{ guardarTexto }}
+                            <Icon v-if="guardarTexto==''" icon="line-md:loading-twotone-loop" class="mr-1 size-6 text-white" />
+                    </button>
+                    
                         <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
                             @click="siguiente"
@@ -191,6 +208,7 @@ onBeforeUnmount(() => {
                     <button
                         class="mt-5 w-full flex items-center justify-center rounded-md focus:outline-none transition duration-300 ease-in-out bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
                         v-if="!iniciarVisible"
+                        @click="terminar"
                     >
                     Terminar
                     </button>
@@ -199,7 +217,7 @@ onBeforeUnmount(() => {
                     <button v-if="!iniciarVisible" v-for="i in (preguntas.length-2)"
                         :class="[
                             'w-7 border rounded-md border-gray-600 text-white text-base space-y-2 flex flex-wrap justify-evenly',
-                            (respondido[i])?' bg-blue-500 ':''
+                            (!respondido[i])?'':((respuestas[i]==respuestasCorrectas[i])?' bg-lime-600':' bg-red-500')
                         ]"
                         @click="cambiar(i)"
                     >
