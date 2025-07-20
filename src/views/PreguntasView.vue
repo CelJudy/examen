@@ -126,11 +126,6 @@ const guardar=async ()=>{
     }
 }
 
-const terminar=async ()=>{
-    const res=await selectAnswers(id);
-    
-}
-
 const handleKeyDown=(event)=>{
     if((currentAnswer.value>0 && !((event.keyCode>=48 && event.keyCode<=57) || (event.keyCode>=96 && event.keyCode<=105) || event.keyCode==8))){
         return event.preventDefault();
@@ -205,13 +200,6 @@ onBeforeUnmount(() => {
                         Siguiente
                         </button>
                     </div>
-                    <button
-                        class="mt-5 w-full flex items-center justify-center rounded-md focus:outline-none transition duration-300 ease-in-out bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
-                        v-if="!iniciarVisible"
-                        @click="terminar"
-                    >
-                    Terminar
-                    </button>
                 </div>
                 <div>
                     <button v-if="!iniciarVisible" v-for="i in (preguntas.length-2)"

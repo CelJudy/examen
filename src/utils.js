@@ -21,6 +21,7 @@ export const saveName=async(name)=>{
         console.log(error);
     }
 }
+
 export const saveAnswer=async(id, data)=>{
     try{
         const options={
@@ -30,21 +31,6 @@ export const saveAnswer=async(id, data)=>{
                 'Content-Type':'application/json',
             },
             data:data
-        }
-        const response=await axios.request(options);
-        return {status:response.status, data:response.data}
-    }catch(error){
-        console.log(error);
-    }
-}
-export const selectAnswers=async(id)=>{
-    try{
-        const options={
-            url:`${ip}select/id/respuestas/${id}`,
-            method:"GET",
-            headers:{
-                'Content-Type':'application/json',
-            }
         }
         const response=await axios.request(options);
         return {status:response.status, data:response.data}
