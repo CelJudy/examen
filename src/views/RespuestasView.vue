@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onBeforeMount } from 'vue';
 import html2pdf from "html2pdf.js";
-import { selectAnswers } from '@/utils';
+//import { selectAnswers } from '@/utils';
 
 const preguntas=[
     '',
@@ -28,9 +28,9 @@ const respuestas=[0, 42, 62, 6, 1275, 157, 56, 2, 4, 10, 3, 38, 45, 28, 12, 0];
 let res={
     data:[]
 };
-onBeforeMount(async ()=>{
+/* onBeforeMount(async ()=>{
     res=await selectAnswers(22);
-});
+}); */
 
 
 const generar=async () => {

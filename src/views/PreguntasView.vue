@@ -1,16 +1,26 @@
 <script setup>
 import {ref, onMounted, onBeforeUnmount } from 'vue';
-import { saveName, saveAnswer, selectAnswers } from '@/utils';
+import { saveName, saveAnswer } from '@/utils';
 import { Icon } from '@iconify/vue';
 
+//agregar 5 mas
+//responder solo 10
+//hacerlas aleatorias
+//cuando pierda el foco cancelar solo la pregunta
+//crear localStorage para que no pierda el avance
+//agregar instrucciones 
+
+const totalQuestions=10;
 const currentAnswer=ref(0);
+const questionNumber=ref(0);
 const answer=ref("");
 let id=0;
 let inicio=0;
 let fin=0;
 const iniciarVisible=ref(true);
 const inputType=ref("text");
-const guardarTexto=ref("Guardar");
+
+//const guardarTexto=ref("Guardar");
 
 const preguntas=[
     'Escribe tu nombre completo',
@@ -29,15 +39,15 @@ const preguntas=[
     'Una tienda aplica un 20% de descuento y luego un 10% adicional sobre el precio ya rebajado. ¿Cuál es el descuento total aplicado?',
     '¿Cuántos meses tienen 28 días?',
     'Un reloj marca las 3:15. ¿Cuál es el ángulo entre la aguja de las horas y la de los minutos?',
-    'Generando PDF...'
 ];
 
 const respuestasCorrectas=[0, 42, 62, 6, 1275, 157, 56, 2, 4, 10, 3, 38, 45, 28, 12, 0];
-let respuestas=[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
+const respuestas=ref([null,null,null,null,null,null,null,null,null,null]);
+let answeredQuestions=[null,null,null,null,null,null,null,null,null,null];
 
-let tiempo=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+//let tiempo=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-const respondido=ref([false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]);
+//const respondido=ref([false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]);
 
 
 /* const iniciar=async ()=>{
@@ -69,6 +79,8 @@ const iniciar=async ()=>{
         const res=await saveName(answer.value);
         if(res.status==200){
             id=res.data.id;
+            questionNumber.value=Math.floor(Math.random() * (preguntas.length-1)) + 1;
+            answeredQuestions[currentAnswer.value]=questionNumber.value;
             currentAnswer.value++;
             inputType.value="number";
             answer.value="";
@@ -77,6 +89,8 @@ const iniciar=async ()=>{
         }
     }
 }
+
+/* 
 
 const siguiente=()=>{
     if(currentAnswer.value<preguntas.length-2){
@@ -106,22 +120,37 @@ const anterior=()=>{
         answer.value=respuestas[currentAnswer.value];
         inicio=Date.now();
     }
-}
+} */
 
 const guardar=async ()=>{
     if(answer.value!=""){
         fin=Date.now();
-        guardarTexto.value="";
+        //guardarTexto.value="";
         const data={
-            pregunta:currentAnswer.value,
+            numeroPregunta:currentAnswer.value,
+            pregunta:questionNumber.value,
             respuesta:answer.value,
             tiempo:(fin-inicio)/1000
         }
-        const res=await saveAnswer(id, data);
-        guardarTexto.value="Guardar";
-        if(res.status==200){
-            respuestas[currentAnswer.value]=Number(answer.value);
-            respondido.value[currentAnswer.value]=true;
+        const res=200;//await saveAnswer(id, data);
+        //guardarTexto.value="Guardar y continuar";
+        if(res/* .status */==200){
+            respuestas.value[currentAnswer.value-1]=(answer.value==respuestasCorrectas[questionNumber.value]);
+            console.log(respuestas.value);
+            //respondido.value[currentAnswer.value]=true;
+
+            if(currentAnswer.value<totalQuestions){
+                //tiempo[currentAnswer.value]+=(fin-inicio)/1000;
+                let nextQuestion=Math.floor(Math.random() * (preguntas.length-1)) + 1;
+                while(answeredQuestions.includes(nextQuestion)){
+                    nextQuestion=Math.floor(Math.random() * (preguntas.length-1)) + 1;
+                }
+                questionNumber.value=nextQuestion;
+                answeredQuestions[currentAnswer.value]=questionNumber.value;
+                currentAnswer.value++;
+                answer.value="";
+                inicio=Date.now();
+            }
         }
     }
 }
@@ -141,7 +170,7 @@ const lostWindowFocus=()=> {
     iniciarVisible.value=true;
 }
 
-onMounted(() => {
+/* onMounted(() => {
     document.addEventListener('visibilitychange', lostWindowFocus);
     document.addEventListener('blur', lostWindowFocus);
 });
@@ -149,7 +178,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     document.removeEventListener('visibilitychange');
     document.removeEventListener('blur');
-});
+}); */
 
     
 
@@ -159,9 +188,8 @@ onBeforeUnmount(() => {
         <div class="flex-auto p-4">
             <div class="flex justify-center min-h-screen space-x-2">
                 <div class="md:w-8/12 lg:w-4/12">
-
                     <p class="title-text mb-3">Examen diagnóstico</p><br>
-                    <p class="subtitle-text mb-3">{{((currentAnswer>0)?`${currentAnswer} - `:'')}}{{ preguntas[currentAnswer] }}</p><br>
+                    <p class="subtitle-text mb-3">{{((currentAnswer>0)?`${currentAnswer} - `:'')}}{{ preguntas[questionNumber] }}</p><br>
                     <input
                         v-if="currentAnswer<preguntas.length-1"
                         :type="inputType"
@@ -178,39 +206,38 @@ onBeforeUnmount(() => {
                     Iniciar
                     </button>
                     <div class="flex flex-wrap justify-evenly space-x-2" v-if="!iniciarVisible">
-                        <button
+                        <!-- <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
                             @click="anterior"
                         >
                         Anterior
-                        </button>
+                        </button> -->
                         <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-900 px-4 py-2 text-white text-base"
                             @click="guardar"
-                            :disabled="respondido[currentAnswer] || guardarTexto==''"
                         >
-                            {{ guardarTexto }}
-                            <Icon v-if="guardarTexto==''" icon="line-md:loading-twotone-loop" class="mr-1 size-6 text-white" />
-                    </button>
+                            Guardar y continuar
+                            <!-- <Icon v-if="guardarTexto==''" icon="line-md:loading-twotone-loop" class="mr-1 size-6 text-white" /> -->
+                        </button>
                     
-                        <button
+                        <!-- <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
                             @click="siguiente"
                         >
                         Siguiente
-                        </button>
+                        </button> -->
                     </div>
                 </div>
                 <div>
-                    <button v-if="!iniciarVisible" v-for="i in (preguntas.length-2)"
+                    <div v-if="!iniciarVisible" v-for="i in totalQuestions"
                         :class="[
                             'w-7 border rounded-md border-gray-600 text-white text-base space-y-2 flex flex-wrap justify-evenly',
-                            (!respondido[i])?'':((respuestas[i]==respuestasCorrectas[i])?' bg-lime-600':' bg-red-500')
+                            (respuestas[i-1]===null)?'':((respuestas[i-1])?' bg-lime-600':' bg-red-500')
                         ]"
                         @click="cambiar(i)"
                     >
                         {{ i }}
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>
