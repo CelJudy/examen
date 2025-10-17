@@ -1,15 +1,7 @@
 <script setup>
 import {ref, onMounted, onBeforeUnmount } from 'vue';
 import { saveName, saveAnswer } from '@/utils';
-import { Icon } from '@iconify/vue';
 
-//agregar 5 mas
-
-//crear localStorage para que no pierda el avance
-//agregar instrucciones 
-//cuando pierda el foco cancelar solo la pregunta
-//responder solo 10
-//hacerlas aleatorias
 const totalQuestions=10;
 const currentAnswer=ref(0);
 const questionNumber=ref(0);
@@ -20,8 +12,6 @@ let fin=0;
 const iniciarVisible=ref(true);
 const inputType=ref("text");
 const instrucciones=ref(true);
-
-//const guardarTexto=ref("Guardar");
 
 const preguntas=[
     'Escribe tu nombre completo',
@@ -46,35 +36,6 @@ const respuestasCorrectas=[0, 42, 62, 6, 1275, 157, 56, 2, 4, 10, 3, 38, 45, 28,
 const respuestas=ref([null,null,null,null,null,null,null,null,null,null]);
 let answeredQuestions=[null,null,null,null,null,null,null,null,null,null];
 
-//let tiempo=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
-//const respondido=ref([false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]);
-
-
-/* const iniciar=async ()=>{
-    if(currentAnswer.value==preguntas.length-3){
-        buttonValue.value="Terminar";
-    }
-    if(currentAnswer.value>0){
-        fin=Date.now();
-        const data={
-            pregunta:currentAnswer.value,
-            respuesta:answer.value,
-            tiempo:(fin-inicio)/1000
-        }
-        const res=await saveAnswer(id, data);
-        fin=0;
-        answer.value="";
-        if(currentAnswer.value==preguntas.length-2){
-            iniciarVisible.value=false;
-            //pdf
-        }
-        currentAnswer.value++;
-        inicio=Date.now();
-        return
-    }
-} */
-
 const iniciar=async ()=>{
     if(answer.value!=""){
         document.addEventListener('focus',()=>{guardar(false);});
@@ -97,59 +58,23 @@ const iniciar=async ()=>{
     }
 }
 
-/* 
-
-const siguiente=()=>{
-    if(currentAnswer.value<preguntas.length-2){
-        fin=Date.now();
-        tiempo[currentAnswer.value]+=(fin-inicio)/1000;
-        currentAnswer.value++;
-        answer.value=respuestas[currentAnswer.value];
-        inicio=Date.now();
-    }
-}
-
-const cambiar=(num)=>{
-    if(currentAnswer.value<preguntas.length-2){
-        fin=Date.now();
-        tiempo[currentAnswer.value]+=(fin-inicio)/1000;
-        currentAnswer.value=num;
-        answer.value=respuestas[currentAnswer.value];
-        inicio=Date.now();
-    }
-}
-
-const anterior=()=>{
-    if(currentAnswer.value>1){
-        fin=Date.now();
-        tiempo[currentAnswer.value]+=(fin-inicio)/1000;
-        currentAnswer.value--;
-        answer.value=respuestas[currentAnswer.value];
-        inicio=Date.now();
-    }
-} */
-
 const guardar=async (evento)=>{
     if((answer.value!="" || !evento) && !instrucciones.value){
         fin=Date.now();
-        //guardarTexto.value="";
         const data={
             numeroPregunta:currentAnswer.value,
             pregunta:questionNumber.value,
-            respuesta:(evento?answer.value:null), //---null
+            respuesta:(evento?answer.value:null),
             tiempo:(fin-inicio)/1000
         }
         const res=await saveAnswer(id, data);
-        //guardarTexto.value="Guardar y continuar";
         if(res.status==200){
             respuestas.value[currentAnswer.value-1]=(evento?(answer.value==respuestasCorrectas[questionNumber.value]):false);//---false
             localStorage.setItem("respuestas", respuestas.value.toString());
             localStorage.setItem("inicio", inicio);
             localStorage.setItem("id", id);
-            //respondido.value[currentAnswer.value]=true;
 
             if(currentAnswer.value<totalQuestions){
-                //tiempo[currentAnswer.value]+=(fin-inicio)/1000;
                 let nextQuestion=Math.floor(Math.random() * (preguntas.length-1)) + 1;
                 while(answeredQuestions.includes(nextQuestion)){
                     nextQuestion=Math.floor(Math.random() * (preguntas.length-1)) + 1;
@@ -163,10 +88,12 @@ const guardar=async (evento)=>{
                 console.log("answeredQuestions",answeredQuestions);
                 console.log("respuestas", respuestas.value);
             }else{
+                console.log("eliminando");
                 localStorage.removeItem("respuestas");
                 localStorage.removeItem("inicio");
                 localStorage.removeItem("answeredQuestions");
                 localStorage.removeItem("id");
+                window.location.reload();
             }
         }
     }
@@ -178,25 +105,8 @@ const handleKeyDown=(event)=>{
     }
 }
 
-const lostWindowFocus=()=> {
-    console.log("evento");
-    /* currentAnswer.value=0;
-    answer.value="";
-    id=0;
-    inicio=0;
-    fin=0;
-    iniciarVisible.value=true; */
-}
-
 onMounted(() => {
-    // document.addEventListener('visibilitychange', ()=>{guardar(false)});
-    // document.addEventListener('blur', ()=>{guardar(false)});
-    //document.addEventListener('focus',()=>{guardar(false);});
     if(localStorage.getItem("inicio")!==null){
-        /* localStorage.removeItem("respuestas");
-        localStorage.removeItem("inicio");
-        localStorage.removeItem("answeredQuestions");
-        localStorage.removeItem("id"); */
         document.addEventListener('focus',()=>{guardar(false);});
         id=localStorage.getItem("id");
         localStorage.getItem("respuestas").split(",").forEach((element,index) => {
@@ -214,21 +124,17 @@ onMounted(() => {
                 }
             }
         });
+        if(currentAnswer.value==0){
+            questionNumber.value=answeredQuestions[totalQuestions-1];
+            currentAnswer.value=totalQuestions;
+        }
         inputType.value="number";
         iniciarVisible.value=false;
         instrucciones.value=false;
         inicio=localStorage.getItem("inicio");
         console.log("answeredQuestions", answeredQuestions);
     }
-    //TODO:reanudar examen
 });
-
-/* onBeforeUnmount(() => {
-    // document.removeEventListener('visibilitychange');
-    // document.removeEventListener('blur');
-}); */
-
-    
 
 </script>
 <template>
@@ -260,26 +166,12 @@ onMounted(() => {
                     Iniciar
                     </button>
                     <div class="flex flex-wrap justify-evenly space-x-2" v-if="!iniciarVisible">
-                        <!-- <button
-                            class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
-                            @click="anterior"
-                        >
-                        Anterior
-                        </button> -->
                         <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-900 px-4 py-2 text-white text-base"
                             @click="guardar(true)"
                         >
                             Guardar y continuar
-                            <!-- <Icon v-if="guardarTexto==''" icon="line-md:loading-twotone-loop" class="mr-1 size-6 text-white" /> -->
                         </button>
-                    
-                        <!-- <button
-                            class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 px-4 py-2 text-white text-base"
-                            @click="siguiente"
-                        >
-                        Siguiente
-                        </button> -->
                     </div>
                 </div>
                 <div>
