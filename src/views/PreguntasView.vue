@@ -4,12 +4,12 @@ import { saveName, saveAnswer } from '@/utils';
 import { Icon } from '@iconify/vue';
 
 //agregar 5 mas
-//responder solo 10
-//hacerlas aleatorias
-//cuando pierda el foco cancelar solo la pregunta
+
 //crear localStorage para que no pierda el avance
 //agregar instrucciones 
-
+//cuando pierda el foco cancelar solo la pregunta
+//responder solo 10
+//hacerlas aleatorias
 const totalQuestions=10;
 const currentAnswer=ref(0);
 const questionNumber=ref(0);
@@ -19,6 +19,7 @@ let inicio=0;
 let fin=0;
 const iniciarVisible=ref(true);
 const inputType=ref("text");
+const instrucciones=ref(true);
 
 //const guardarTexto=ref("Guardar");
 
@@ -76,6 +77,7 @@ let answeredQuestions=[null,null,null,null,null,null,null,null,null,null];
 
 const iniciar=async ()=>{
     if(answer.value!=""){
+        document.addEventListener('focus',()=>{guardar(false);});
         const res=await saveName(answer.value);
         if(res.status==200){
             id=res.data.id;
@@ -85,7 +87,12 @@ const iniciar=async ()=>{
             inputType.value="number";
             answer.value="";
             iniciarVisible.value=false;
+            instrucciones.value=false;
             inicio=Date.now();
+            localStorage.setItem("respuestas", respuestas.value.toString());
+            localStorage.setItem("inicio", inicio);
+            localStorage.setItem("answeredQuestions", answeredQuestions.toString());
+            localStorage.setItem("id", id);
         }
     }
 }
@@ -122,21 +129,23 @@ const anterior=()=>{
     }
 } */
 
-const guardar=async ()=>{
-    if(answer.value!=""){
+const guardar=async (evento)=>{
+    if((answer.value!="" || !evento) && !instrucciones.value){
         fin=Date.now();
         //guardarTexto.value="";
         const data={
             numeroPregunta:currentAnswer.value,
             pregunta:questionNumber.value,
-            respuesta:answer.value,
+            respuesta:(evento?answer.value:null), //---null
             tiempo:(fin-inicio)/1000
         }
-        const res=200;//await saveAnswer(id, data);
+        const res=await saveAnswer(id, data);
         //guardarTexto.value="Guardar y continuar";
-        if(res/* .status */==200){
-            respuestas.value[currentAnswer.value-1]=(answer.value==respuestasCorrectas[questionNumber.value]);
-            console.log(respuestas.value);
+        if(res.status==200){
+            respuestas.value[currentAnswer.value-1]=(evento?(answer.value==respuestasCorrectas[questionNumber.value]):false);//---false
+            localStorage.setItem("respuestas", respuestas.value.toString());
+            localStorage.setItem("inicio", inicio);
+            localStorage.setItem("id", id);
             //respondido.value[currentAnswer.value]=true;
 
             if(currentAnswer.value<totalQuestions){
@@ -147,9 +156,17 @@ const guardar=async ()=>{
                 }
                 questionNumber.value=nextQuestion;
                 answeredQuestions[currentAnswer.value]=questionNumber.value;
+                localStorage.setItem("answeredQuestions",answeredQuestions.toString());
                 currentAnswer.value++;
                 answer.value="";
                 inicio=Date.now();
+                console.log("answeredQuestions",answeredQuestions);
+                console.log("respuestas", respuestas.value);
+            }else{
+                localStorage.removeItem("respuestas");
+                localStorage.removeItem("inicio");
+                localStorage.removeItem("answeredQuestions");
+                localStorage.removeItem("id");
             }
         }
     }
@@ -162,22 +179,53 @@ const handleKeyDown=(event)=>{
 }
 
 const lostWindowFocus=()=> {
-    currentAnswer.value=0;
+    console.log("evento");
+    /* currentAnswer.value=0;
     answer.value="";
     id=0;
     inicio=0;
     fin=0;
-    iniciarVisible.value=true;
+    iniciarVisible.value=true; */
 }
 
-/* onMounted(() => {
-    document.addEventListener('visibilitychange', lostWindowFocus);
-    document.addEventListener('blur', lostWindowFocus);
+onMounted(() => {
+    // document.addEventListener('visibilitychange', ()=>{guardar(false)});
+    // document.addEventListener('blur', ()=>{guardar(false)});
+    //document.addEventListener('focus',()=>{guardar(false);});
+    if(localStorage.getItem("inicio")!==null){
+        /* localStorage.removeItem("respuestas");
+        localStorage.removeItem("inicio");
+        localStorage.removeItem("answeredQuestions");
+        localStorage.removeItem("id"); */
+        document.addEventListener('focus',()=>{guardar(false);});
+        id=localStorage.getItem("id");
+        localStorage.getItem("respuestas").split(",").forEach((element,index) => {
+            if(element!==""){
+                respuestas.value[index]=(element=="false"?false:true);
+            }
+        });
+        localStorage.getItem("answeredQuestions").split(",").forEach((element,index) => {
+            if(element!==""){
+                answeredQuestions[index]=parseInt(element);
+            }else{
+                if(questionNumber.value==0){
+                    questionNumber.value=answeredQuestions[index-1];
+                    currentAnswer.value=index;
+                }
+            }
+        });
+        inputType.value="number";
+        iniciarVisible.value=false;
+        instrucciones.value=false;
+        inicio=localStorage.getItem("inicio");
+        console.log("answeredQuestions", answeredQuestions);
+    }
+    //TODO:reanudar examen
 });
 
-onBeforeUnmount(() => {
-    document.removeEventListener('visibilitychange');
-    document.removeEventListener('blur');
+/* onBeforeUnmount(() => {
+    // document.removeEventListener('visibilitychange');
+    // document.removeEventListener('blur');
 }); */
 
     
@@ -189,6 +237,12 @@ onBeforeUnmount(() => {
             <div class="flex justify-center min-h-screen space-x-2">
                 <div class="md:w-8/12 lg:w-4/12">
                     <p class="title-text mb-3">Examen diagnóstico</p><br>
+                    <p v-if="instrucciones" class="subtitle-text mb-3"><b>Instrucciones:</b></p>
+                    <ol v-if="instrucciones" type="1" class="subtitle-text mb-3">
+                        <li><b>1</b> Las respuestas son números, por lo que letras y caracteres estan bloqueados</li>
+                        <li><b>2</b> Una vez iniciado el examen no puedes pausarlo</li>
+                        <li><b>3</b> Si minimizas o cambias de ventana la pregunta actual se saltará</li>
+                    </ol>
                     <p class="subtitle-text mb-3">{{((currentAnswer>0)?`${currentAnswer} - `:'')}}{{ preguntas[questionNumber] }}</p><br>
                     <input
                         v-if="currentAnswer<preguntas.length-1"
@@ -214,7 +268,7 @@ onBeforeUnmount(() => {
                         </button> -->
                         <button
                             class="mt-5 flex items-center justify-center rounded-md focus:outline-none transition duration-300 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-900 px-4 py-2 text-white text-base"
-                            @click="guardar"
+                            @click="guardar(true)"
                         >
                             Guardar y continuar
                             <!-- <Icon v-if="guardarTexto==''" icon="line-md:loading-twotone-loop" class="mr-1 size-6 text-white" /> -->
